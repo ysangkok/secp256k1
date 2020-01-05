@@ -132,15 +132,22 @@ int secp256k1_musig_pubkey_combine(const secp256k1_context* ctx, secp256k1_scrat
 }
 
 int secp256k1_musig_pubkey_tweak_add(const secp256k1_context* ctx, secp256k1_musig_pre_session *pre_session, secp256k1_xonly_pubkey *output_pubkey, int *is_negated, const secp256k1_xonly_pubkey *internal_pubkey, const unsigned char *tweak32) {
+    const size_t pk_siz = sizeof(*output_pubkey);
+    VERIFY_CHECK(pk_siz == 64);
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK(pre_session != NULL);
     ARG_CHECK(pre_session->magic == pre_session_magic);
+    ARG_CHECK(output_pubkey != NULL);
+    ARG_CHECK(internal_pubkey != NULL);
     /* This function can only be called once because otherwise signing would not
      * succeed */
     ARG_CHECK(pre_session->is_tweaked == 0);
 
     pre_session->is_internal_key_negated = pre_session->is_pk_negated;
-    if(!secp256k1_xonly_pubkey_tweak_add(ctx, output_pubkey, is_negated, internal_pubkey, tweak32)) {
+    if (internal_pubkey != output_pubkey) {
+        memcpy(output_pubkey, internal_pubkey, pk_siz);
+    }
+    if(!secp256k1_xonly_pubkey_tweak_add(ctx, output_pubkey, is_negated, tweak32)) {
         return 0;
     }
     memcpy(pre_session->tweak, tweak32, 32);

@@ -707,12 +707,14 @@ void test_schnorrsig_taproot(void) {
     secp256k1_rand256(sk);
     CHECK(secp256k1_xonly_pubkey_create(ctx, &internal_pk, sk) == 1);
     memset(tweak, 1, sizeof(tweak));
-    CHECK(secp256k1_xonly_pubkey_tweak_add(ctx, &output_pk, &is_negated, &internal_pk, tweak) == 1);
+    /* Copy internal_pk because tweak_add changes the public key in place */
+    output_pk = internal_pk;
+    CHECK(secp256k1_xonly_pubkey_tweak_add(ctx, &output_pk, &is_negated, tweak) == 1);
     CHECK(secp256k1_xonly_pubkey_serialize(ctx, output_pk_bytes, &output_pk) == 1);
 
     /* Key spend */
     secp256k1_rand256(msg);
-    CHECK(secp256k1_xonly_privkey_tweak_add(ctx, sk, tweak) == 1);
+    CHECK(secp256k1_xonly_seckey_tweak_add(ctx, sk, tweak) == 1);
     CHECK(secp256k1_schnorrsig_sign(ctx, &sig, msg, sk, NULL, NULL) == 1);
     /* Verify key spend */
     CHECK(secp256k1_xonly_pubkey_parse(ctx, &output_pk, output_pk_bytes) == 1);
